@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ArrowRight, Box, Heart, Layers } from "lucide-react";
 import { FEATURED_POKEMON_IDS, HERO_POKEMON_ID } from "@/constants/app";
-import { POKEMON_TYPES, TYPE_PALETTE, typeColor } from "@/constants/types";
+import { POKEMON_TYPES, TYPE_PALETTE } from "@/constants/types";
 import { SHOWCASE_POKEMON_SLUG } from "@/constants/showcase";
-import { getFeaturedPokemon, getPokedexIndex, type FeaturedPokemon } from "@/lib/api/pokeapi";
-import { formatDexNumber, titleCase } from "@/lib/utils/format";
+import { getFeaturedPokemon, getPokedexIndex } from "@/lib/api/pokeapi";
+import { titleCase } from "@/lib/utils/format";
 import { PageContainer } from "@/components/layout/page-container";
 import { ButtonLink } from "@/components/ui/button";
 import { TypeBadge } from "@/components/ui/badge";
@@ -12,39 +12,8 @@ import { AnimatedText } from "@/components/ui/animated-text";
 import { RevealGroup } from "@/components/ui/reveal-group";
 import { SectionHeading, Surface } from "@/components/ui/surface";
 import { PokemonCard } from "@/components/pokemon/pokemon-card";
-import { PokemonImage } from "@/components/pokemon/pokemon-image";
+import { HeroPikachu } from "@/features/home/hero-pikachu";
 import { HeroSearch } from "@/features/home/hero-search";
-
-function HeroArtwork({ pokemon }: { pokemon: FeaturedPokemon | undefined }) {
-  if (!pokemon) return null;
-  return (
-    <Link
-      href={`/pokemon/${pokemon.slug}`}
-      className="hero-art-enter group relative mx-auto block aspect-square w-full max-w-[26rem] rounded-full focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-focus"
-    >
-      <span className="sr-only">
-        Featured: {pokemon.name} {formatDexNumber(pokemon.id)}
-      </span>
-      <div
-        aria-hidden="true"
-        className="absolute inset-[8%] rounded-full border border-border"
-        style={{ background: `radial-gradient(closest-side, ${typeColor(pokemon.types[0])}2e, transparent 80%)` }}
-      />
-      <div aria-hidden="true" className="absolute inset-0 rounded-full border border-dashed border-border opacity-60" />
-      <PokemonImage
-        src={pokemon.artwork}
-        alt=""
-        sizes="(min-width: 1024px) 26rem, 80vw"
-        preload
-        className="p-6 drop-shadow-[0_30px_50px_rgb(0_0_0/0.35)] transition-transform duration-700 ease-out-quart group-hover:scale-[1.03]"
-      />
-      <span className="absolute bottom-[6%] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-border bg-bg-elevated/85 px-4 py-1.5 text-sm backdrop-blur">
-        <span className="font-mono text-subtle">{formatDexNumber(pokemon.id)}</span>{" "}
-        <span className="font-display font-semibold text-text">{pokemon.name}</span>
-      </span>
-    </Link>
-  );
-}
 
 export default async function HomePage() {
   const [index, featured] = await Promise.all([
@@ -96,7 +65,7 @@ export default async function HomePage() {
             </div>
           </RevealGroup>
           {/* The headline and artwork stay visible from first paint so they never delay LCP. */}
-          <HeroArtwork pokemon={hero} />
+          {hero && <HeroPikachu pokemon={hero} />}
         </PageContainer>
       </section>
 
