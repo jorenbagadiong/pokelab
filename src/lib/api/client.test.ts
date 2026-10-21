@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchJson, resolveApiUrl } from "./client";
+import { fetchJson, resolveApiUrl, retryDelay } from "./client";
 import { ApiError, NotFoundError } from "./errors";
 
 const json = (body: unknown, status = 200) =>
@@ -56,5 +56,57 @@ describe("fetchJson", () => {
   it("rejects invalid JSON bodies", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response("<html>", { status: 200 }));
     await expect(fetchJson("/pokemon/1", { fetchImpl })).rejects.toThrow(/invalid JSON/);
+  });
+});
+
+describe("fetchJson resilience", () => {
+  it("retries a request that times out or stalls, then succeeds", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(new DOMException("The operation timed out.", "TimeoutError"))
+      .mockResolvedValueOnce(json({ id: 25 }));
+    await expect(fetchJson("/pokemon/25", { fetchImpl })).resolves.toEqual({ id: 25 });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries 429 responses, honouring Retry-After", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("", { status: 429, headers: { "Retry-After": "0" } }))
+      .mockResolvedValueOnce(json({ ok: true }));
+    await expect(fetchJson("/pokemon/1", { fetchImpl })).resolves.toEqual({ ok: true });
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("limits concurrent requests", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const fetchImpl = vi.fn(async () => {
+      inFlight++;
+      peak = Math.max(peak, inFlight);
+      await new Promise((r) => setTimeout(r, 10));
+      inFlight--;
+      return json({});
+    });
+    await Promise.all(Array.from({ length: 30 }, (_, i) => fetchJson(`/pokemon/${i + 1}`, { fetchImpl })));
+    expect(fetchImpl).toHaveBeenCalledTimes(30);
+    expect(peak).toBeLessThanOrEqual(8);
+  });
+});
+
+describe("retryDelay", () => {
+  it("backs off exponentially with jitter", () => {
+    const first = retryDelay(0);
+    const second = retryDelay(1);
+    expect(first).toBeGreaterThanOrEqual(400);
+    expect(first).toBeLessThan(800);
+    expect(second).toBeGreaterThanOrEqual(800);
+    expect(second).toBeLessThan(1200);
+  });
+
+  it("honours Retry-After but caps it", () => {
+    expect(retryDelay(0, "2")).toBe(2000);
+    expect(retryDelay(0, "120")).toBe(5000);
+    expect(retryDelay(0, "soon")).toBeGreaterThanOrEqual(400);
   });
 });

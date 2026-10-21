@@ -8,8 +8,12 @@ export const SPRITES_BASE_URL =
 /** Cards per page in the Pokédex explorer. */
 export const PAGE_SIZE = 24;
 
-/** National Pokédex entries prerendered at build time; the rest render on demand. */
-export const PRERENDERED_POKEMON_COUNT = 151;
+/**
+ * Detail pages prerendered at build time. Kept small so builds make few PokéAPI
+ * requests; every other Pokémon gets an instant shell, renders on first visit
+ * and is then cached.
+ */
+export const PRERENDERED_POKEMON_COUNT = 24;
 
 /** Curated Pokémon shown on the home page (National Pokédex numbers). */
 export const FEATURED_POKEMON_IDS = [6, 25, 133, 448, 658, 94] as const;

@@ -30,7 +30,7 @@ npm run dev          # development server on http://localhost:3000
 npm run lint         # ESLint (next/core-web-vitals + TypeScript)
 npm run typecheck    # generate route types, then tsc --noEmit
 npm test             # Vitest unit and component tests
-npm run build        # production build (prerenders the home page, Pokédex, and Gen 1 detail pages)
+npm run build        # production build (prerenders the home page, Pokédex, and the first 24 detail pages)
 npm start            # serve the production build
 ```
 
@@ -77,7 +77,7 @@ src/
 - **The listing makes no per-card detail requests.** The Pokédex index is built from `/pokemon-species` plus the 18 `/type/{name}` resources, which list every Pokémon's type slots. That is 19 requests in total, cached and shared across pages. Card artwork uses the PokeAPI sprite-repository URL, with a visible fallback if it fails to load.
 - **Validated parsing.** Responses are validated for the fields the app consumes. A missing required field throws `ApiParseError`. Optional fields become `null` and are shown as "Unknown" or "unavailable", never invented.
 - **The URL is the explorer's source of truth.** Filter state is read with `useSearchParams` and written with the History API. Back/forward navigation and shared links work, and no server round-trip is needed.
-- **Detail routes.** Gen 1 (151 pages) is prerendered by `generateStaticParams`. Other Pokémon serve an instant shell, are rendered on first visit, and are then cached. Numeric ids and form names (`/pokemon/133`, `/pokemon/deoxys-normal`) redirect to the species slug. Unknown names render the not-found page.
+- **Detail routes.** The first 24 Pokémon are prerendered by `generateStaticParams` (kept small so builds make few PokéAPI requests). Other Pokémon serve an instant shell, are rendered on first visit, and are then cached. Numeric ids and form names (`/pokemon/133`, `/pokemon/deoxys-normal`) redirect to the species slug. Unknown names render the not-found page.
 
 ### Units
 
