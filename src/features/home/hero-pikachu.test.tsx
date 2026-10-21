@@ -48,12 +48,18 @@ beforeEach(() => {
 });
 
 describe("HeroPikachu", () => {
-  it("keeps the official artwork as the poster and fallback without hardware WebGL", async () => {
+  it("falls back to the official artwork without hardware WebGL", async () => {
     webgl.accelerated = false;
     await renderHero();
     expect(screen.getByRole("img", { name: "Pikachu official artwork" })).toBeInTheDocument();
     expect(screen.queryByTestId("pikachu-scene")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /#0025\s+Pikachu/ })).toHaveAttribute("href", "/pokemon/pikachu");
+  });
+
+  it("shows only the 3D model when supported, never the 2D artwork", async () => {
+    await renderHero();
+    expect(await screen.findByTestId("pikachu-scene")).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "Pikachu official artwork" })).not.toBeInTheDocument();
   });
 
   it("shows the interactive 3D model, labelled as fan-made, when supported", async () => {

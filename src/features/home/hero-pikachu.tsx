@@ -3,8 +3,9 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
-import { Zap } from "lucide-react";
+import { Loader2, Zap } from "lucide-react";
 import { typeColor } from "@/constants/types";
+import { useIsClient } from "@/hooks/use-is-client";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { isHardwareAcceleratedWebGL } from "@/lib/webgl";
 import { cn } from "@/lib/utils/cn";
@@ -20,11 +21,13 @@ interface HeroPikachuProps {
 }
 
 /**
- * Hero visual: a fan-made 3D Pikachu built in code. The official 2D artwork is
- * server-rendered as the poster (so first paint and LCP are unaffected) and
- * stays as the fallback without hardware-accelerated WebGL.
+ * Hero visual: a fan-made 3D Pikachu built in code. A loading state shows until
+ * the first frame renders. The official 2D artwork appears only as the fallback
+ * for devices without hardware-accelerated WebGL, and is never rendered before
+ * that check, so capable devices only ever see the 3D model.
  */
 export function HeroPikachu({ pokemon }: HeroPikachuProps) {
+  const isClient = useIsClient();
   const supported = useSyncExternalStore(noopSubscribe, isHardwareAcceleratedWebGL, () => false);
   const reducedMotion = useReducedMotion();
   const [ready, setReady] = useState(false);
@@ -68,16 +71,26 @@ export function HeroPikachu({ pokemon }: HeroPikachuProps) {
       />
       <div aria-hidden="true" className="absolute inset-0 rounded-full border border-dashed border-border opacity-60" />
 
-      {/* Poster: official artwork, replaced by the 3D model once it has rendered. */}
-      <div className={cn("absolute inset-0 transition-opacity duration-700", show3D && "pointer-events-none opacity-0")} aria-hidden={show3D}>
-        <PokemonImage
-          src={pokemon.artwork}
-          alt={`${pokemon.name} official artwork`}
-          sizes="(min-width: 1024px) 26rem, 80vw"
-          preload
-          className="p-6 drop-shadow-[0_30px_50px_rgb(0_0_0/0.35)]"
-        />
-      </div>
+      {/* Loading state until the 3D model has rendered (and during server rendering). */}
+      {(!isClient || (supported && !ready)) && (
+        <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-muted">
+          <Loader2 className="size-7 animate-spin text-accent" aria-hidden="true" />
+          <span>Loading 3D {pokemon.name}…</span>
+        </div>
+      )}
+
+      {/* Fallback only when 3D is unavailable: the official artwork. */}
+      {isClient && !supported && (
+        <div className="absolute inset-0">
+          <PokemonImage
+            src={pokemon.artwork}
+            alt={`${pokemon.name} official artwork`}
+            sizes="(min-width: 1024px) 26rem, 80vw"
+            preload
+            className="p-6 drop-shadow-[0_30px_50px_rgb(0_0_0/0.35)]"
+          />
+        </div>
+      )}
 
       {supported && (
         <div
