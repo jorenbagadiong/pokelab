@@ -1,26 +1,262 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Dark mode is driven by data-theme on <html> (set before paint). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ------------------------------------------------------------------ */
+/* Design tokens                                                       */
+/* ------------------------------------------------------------------ */
+
+:root,
+[data-theme="dark"] {
+  /* Surfaces */
+  --bg: #070b16;
+  --bg-elevated: #0c1222;
+  --surface: rgb(255 255 255 / 0.035);
+  --surface-strong: #111a2e;
+  --surface-hover: rgb(255 255 255 / 0.06);
+  --border: rgb(148 163 184 / 0.14);
+  --border-strong: rgb(148 163 184 / 0.28);
+
+  /* Text */
+  --text: #e6ebf5;
+  --text-muted: #94a3b8;
+  --text-subtle: #7c8aa3;
+
+  /* Accents */
+  --accent: #22d3ee;
+  --accent-strong: #67e8f9;
+  --accent-contrast: #04121a;
+  --accent-2: #a78bfa;
+  --accent-soft: rgb(34 211 238 / 0.12);
+  --accent-2-soft: rgb(139 92 246 / 0.16);
+
+  /* Feedback */
+  --danger: #fb7185;
+  --danger-soft: rgb(251 113 133 / 0.12);
+  --favorite: #fb7185;
+
+  /* States */
+  --focus-ring: #67e8f9;
+  --disabled-opacity: 0.45;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 8px 24px -8px rgb(0 0 0 / 0.55);
+  --shadow-lg: 0 24px 60px -20px rgb(0 0 0 / 0.7);
+  --glow-accent: 0 0 0 1px rgb(34 211 238 / 0.25), 0 12px 40px -12px rgb(34 211 238 / 0.35);
+
+  /* Ambient background */
+  --ambient-1: rgb(34 211 238 / 0.10);
+  --ambient-2: rgb(139 92 246 / 0.12);
+
+  --skeleton: rgb(148 163 184 / 0.12);
+  --skeleton-shine: rgb(148 163 184 / 0.2);
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: #f4f6fb;
+  --bg-elevated: #ffffff;
+  --surface: rgb(255 255 255 / 0.85);
+  --surface-strong: #ffffff;
+  --surface-hover: rgb(15 23 42 / 0.04);
+  --border: rgb(15 23 42 / 0.1);
+  --border-strong: rgb(15 23 42 / 0.2);
+
+  --text: #0b1220;
+  --text-muted: #475569;
+  --text-subtle: #5b6b82;
+
+  --accent: #0e7490;
+  --accent-strong: #155e75;
+  --accent-contrast: #ffffff;
+  --accent-2: #6d28d9;
+  --accent-soft: rgb(14 116 144 / 0.1);
+  --accent-2-soft: rgb(109 40 217 / 0.1);
+
+  --danger: #be123c;
+  --danger-soft: rgb(190 18 60 / 0.08);
+  --favorite: #e11d48;
+
+  --focus-ring: #0e7490;
+
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.06);
+  --shadow-md: 0 8px 24px -10px rgb(15 23 42 / 0.18);
+  --shadow-lg: 0 24px 60px -24px rgb(15 23 42 / 0.25);
+  --glow-accent: 0 0 0 1px rgb(14 116 144 / 0.2), 0 12px 32px -14px rgb(14 116 144 / 0.35);
+
+  --ambient-1: rgb(14 116 144 / 0.08);
+  --ambient-2: rgb(109 40 217 / 0.07);
+
+  --skeleton: rgb(15 23 42 / 0.07);
+  --skeleton-shine: rgb(15 23 42 / 0.12);
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-subtle: var(--text-subtle);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-accent-2: var(--accent-2);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-2-soft: var(--accent-2-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-favorite: var(--favorite);
+  --color-focus: var(--focus-ring);
+
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-face), var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-code), ui-monospace, monospace;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-glow: var(--glow-accent);
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --duration-fast: 200ms;
+  --duration-base: 480ms;
+  --duration-slow: 800ms;
+  --header-height: 4rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                                */
+/* ------------------------------------------------------------------ */
+
+html {
+  background-color: var(--bg);
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+/* Restrained ambient lighting behind content. */
+.ambient-backdrop {
+  background:
+    radial-gradient(60rem 40rem at 85% -10%, var(--ambient-2), transparent 60%),
+    radial-gradient(50rem 35rem at -10% 10%, var(--ambient-1), transparent 60%);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Hide the native clear button so our own clear control is the only one. */
+input[type="search"]::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.pixelated {
+  image-rendering: pixelated;
+}
+
+/* ------------------------------------------------------------------ */
+/* Motion                                                              */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Pre-hydration hidden state for elements that animate in with Anime.js.
+ * Only applied when the bootstrap script confirmed motion is allowed. The
+ * failsafe animation reveals the content if JavaScript never takes over.
+ */
+@keyframes nexus-failsafe {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+[data-motion="ok"] [data-reveal] {
+  opacity: 0;
+  animation: nexus-failsafe 1ms linear 2.5s forwards;
+}
+
+[data-motion="ok"] [data-grow] {
+  transform: scaleX(0);
+  animation: nexus-failsafe 1ms linear 2.5s forwards;
+}
+
+/* Transform-only entrance for hero artwork: runs on first paint, never hides content. */
+@keyframes nexus-art-enter {
+  from {
+    transform: translateY(12px) scale(0.97);
+  }
+}
+
+.hero-art-enter {
+  animation: nexus-art-enter var(--duration-slow) cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+@keyframes nexus-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes nexus-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--skeleton);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--skeleton-shine), transparent);
+  animation: nexus-shimmer 1.6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .skeleton::after {
+    display: none;
+  }
 }

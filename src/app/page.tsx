@@ -1,69 +1,185 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Box, Heart, Layers } from "lucide-react";
+import { FEATURED_POKEMON_IDS, HERO_POKEMON_ID } from "@/constants/app";
+import { POKEMON_TYPES, TYPE_PALETTE, typeColor } from "@/constants/types";
+import { SHOWCASE_POKEMON_SLUG } from "@/constants/showcase";
+import { getFeaturedPokemon, getPokedexIndex, type FeaturedPokemon } from "@/lib/api/pokeapi";
+import { formatDexNumber, titleCase } from "@/lib/utils/format";
+import { PageContainer } from "@/components/layout/page-container";
+import { ButtonLink } from "@/components/ui/button";
+import { TypeBadge } from "@/components/ui/badge";
+import { AnimatedText } from "@/components/ui/animated-text";
+import { RevealGroup } from "@/components/ui/reveal-group";
+import { SectionHeading, Surface } from "@/components/ui/surface";
+import { PokemonCard } from "@/components/pokemon/pokemon-card";
+import { PokemonImage } from "@/components/pokemon/pokemon-image";
+import { HeroSearch } from "@/features/home/hero-search";
 
-export default function Home() {
+function HeroArtwork({ pokemon }: { pokemon: FeaturedPokemon | undefined }) {
+  if (!pokemon) return null;
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
+    <Link
+      href={`/pokemon/${pokemon.slug}`}
+      className="hero-art-enter group relative mx-auto block aspect-square w-full max-w-[26rem] rounded-full focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-focus"
+    >
+      <span className="sr-only">
+        Featured: {pokemon.name} {formatDexNumber(pokemon.id)}
+      </span>
+      <div
+        aria-hidden="true"
+        className="absolute inset-[8%] rounded-full border border-border"
+        style={{ background: `radial-gradient(closest-side, ${typeColor(pokemon.types[0])}2e, transparent 80%)` }}
+      />
+      <div aria-hidden="true" className="absolute inset-0 rounded-full border border-dashed border-border opacity-60" />
+      <PokemonImage
+        src={pokemon.artwork}
+        alt=""
+        sizes="(min-width: 1024px) 26rem, 80vw"
+        preload
+        className="p-6 drop-shadow-[0_30px_50px_rgb(0_0_0/0.35)] transition-transform duration-700 ease-out-quart group-hover:scale-[1.03]"
+      />
+      <span className="absolute bottom-[6%] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-border bg-bg-elevated/85 px-4 py-1.5 text-sm backdrop-blur">
+        <span className="font-mono text-subtle">{formatDexNumber(pokemon.id)}</span>{" "}
+        <span className="font-display font-semibold text-text">{pokemon.name}</span>
+      </span>
+    </Link>
+  );
+}
+
+export default async function HomePage() {
+  const [index, featured] = await Promise.all([
+    getPokedexIndex(),
+    getFeaturedPokemon([HERO_POKEMON_ID, ...FEATURED_POKEMON_IDS.filter((id) => id !== HERO_POKEMON_ID)]),
+  ]);
+  const hero = featured.find((p) => p.id === HERO_POKEMON_ID);
+  const typeCounts = new Map(POKEMON_TYPES.map((t) => [t, index.filter((p) => p.types.includes(t)).length]));
+
+  return (
+    <>
+      <section aria-labelledby="hero-title" className="relative overflow-hidden">
+        <PageContainer className="grid items-center gap-12 pb-16 pt-12 sm:pt-16 lg:grid-cols-[1.1fr_1fr] lg:pb-24 lg:pt-20">
+          <RevealGroup>
+            <p data-reveal className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-muted">
+              <span className="size-1.5 rounded-full bg-accent" aria-hidden="true" />
+              {index.length.toLocaleString("en")} Pokémon · live PokéAPI data
+            </p>
+            <AnimatedText
+              as="h1"
+              id="hero-title"
+              trigger="mount"
+              className="font-display text-4xl font-bold leading-[1.05] tracking-tight text-text sm:text-6xl"
+              text={[
+                "The research terminal for ",
+                { text: "every Pokémon", className: "bg-gradient-to-r from-accent to-accent-2 bg-clip-text pb-1 text-transparent" },
+              ]}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <AnimatedText
+              as="p"
+              split="words"
+              trigger="mount"
+              delay={350}
+              className="mt-5 max-w-xl text-lg text-muted"
+              text="Search the National Pokédex, compare base stats, trace evolution chains and keep a collection of favorites."
+            />
+            <div data-reveal className="mt-8">
+              <HeroSearch />
+            </div>
+            <div data-reveal className="mt-6 flex flex-wrap gap-3">
+              <ButtonLink href="/pokemon" size="lg">
+                Open the Pokédex
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </ButtonLink>
+              <ButtonLink href="/favorites" variant="secondary" size="lg">
+                <Heart className="size-4" aria-hidden="true" />
+                Favorites
+              </ButtonLink>
+            </div>
+          </RevealGroup>
+          {/* The headline and artwork stay visible from first paint so they never delay LCP. */}
+          <HeroArtwork pokemon={hero} />
+        </PageContainer>
+      </section>
+
+      <PageContainer className="space-y-20">
+        <section aria-labelledby="featured-title">
+          <SectionHeading
+            id="featured-title"
+            eyebrow="Featured"
+            title="Fan favorites"
+            description="A few well-known faces to start with."
+            action={
+              <Link href="/pokemon" className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline">
+                View all <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+            }
+          />
+          {featured.length > 0 ? (
+            <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-6">
+              {featured.map((pokemon) => (
+                <li key={pokemon.id}>
+                  <PokemonCard pokemon={pokemon} artwork={pokemon.artwork} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted">Featured Pokémon are temporarily unavailable.</p>
+          )}
+        </section>
+
+        <section aria-labelledby="types-title">
+          <SectionHeading
+            id="types-title"
+            eyebrow="Explore"
+            title="Browse by type"
+            description="Jump into the Pokédex filtered to a single type."
+          />
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {POKEMON_TYPES.map((type) => (
+              <li key={type}>
+                <Link
+                  href={`/pokemon?type=${type}`}
+                  className="group flex items-center justify-between gap-2 rounded-xl border border-border bg-surface px-4 py-3.5 transition-[border-color,background-color] duration-200 hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                  style={{ borderLeftColor: TYPE_PALETTE[type].color, borderLeftWidth: 3 }}
+                >
+                  <span className="sr-only">{titleCase(type)} type, </span>
+                  <TypeBadge type={type} />
+                  <span className="font-mono text-xs tabular-nums text-subtle">
+                    {typeCounts.get(type) ?? 0}
+                    <span className="sr-only"> Pokémon</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section aria-labelledby="tools-title" className="grid gap-4 md:grid-cols-3">
+          <h2 id="tools-title" className="sr-only">
+            What you can do
+          </h2>
+          <Surface className="p-6">
+            <Layers className="mb-4 size-6 text-accent" aria-hidden="true" />
+            <h3 className="font-display text-lg font-semibold text-text">Complete profiles</h3>
+            <p className="mt-2 text-sm text-muted">Base stats, abilities, moves, sprites and Pokédex entries, straight from PokéAPI.</p>
+          </Surface>
+          <Surface className="p-6">
+            <Heart className="mb-4 size-6 text-favorite" aria-hidden="true" />
+            <h3 className="font-display text-lg font-semibold text-text">Your favorites</h3>
+            <p className="mt-2 text-sm text-muted">Save Pokémon with one tap. Favorites stay in this browser across visits.</p>
+          </Surface>
+          <Surface className="p-6">
+            <Box className="mb-4 size-6 text-accent-2" aria-hidden="true" />
+            <h3 className="font-display text-lg font-semibold text-text">3D showcase</h3>
+            <p className="mt-2 text-sm text-muted">
+              An interactive WebGL viewer, demonstrated with a clearly labelled placeholder model on{" "}
+              <Link href={`/pokemon/${SHOWCASE_POKEMON_SLUG}#showcase`} className="text-accent underline-offset-4 hover:underline">
+                Eevee’s page
+              </Link>
+              .
+            </p>
+          </Surface>
+        </section>
+      </PageContainer>
+    </>
   );
 }
