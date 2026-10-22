@@ -18,8 +18,10 @@ export const PRERENDERED_POKEMON_COUNT = 24;
 /** Curated Pokémon shown on the home page (National Pokédex numbers). */
 export const FEATURED_POKEMON_IDS = [6, 25, 133, 448, 658, 94] as const;
 
-/** The hero Pokémon on the home page (shown as a fan-made 3D model, see features/home/hero-pikachu). */
+/** Hero Pokémon on the home page, shown as fan-made 3D models (see features/home/hero-showcase). */
 export const HERO_POKEMON_ID = 25;
+/** Shown alongside the hero Pokémon; must be in FEATURED_POKEMON_IDS so their data is fetched. */
+export const HERO_COMPANION_IDS = [6, 94] as const;
 
 /** Highest base stat value in the main series (Blissey's HP); used to scale stat bars. */
 export const MAX_BASE_STAT = 255;

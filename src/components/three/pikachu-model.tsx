@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, type RefObject } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { ContactShadows, Environment, Lightformer } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { createFurShellMaterials, createStrandMask } from "@/lib/three/procedural";
 import {
   AdditiveBlending,
   BufferAttribute,
@@ -61,6 +61,8 @@ const EAR_PROFILE: [number, number][] = [
 ];
 
 const HOP_DURATION = 0.7;
+/** Length of the shell fur on the body, in scene units. */
+const FUR_LENGTH = 0.07;
 
 function smoothCurve(points: [number, number][], samples: number): Vector2[] {
   const curve = new CatmullRomCurve3(points.map(([r, y]) => new Vector3(r, y, 0)), false, "centripetal");
@@ -114,6 +116,10 @@ function createBodyGeometry() {
     const back = smoothstep(2.0, 2.35, angle);
     const band = (center: number) => smoothstep(0.075, 0.045, Math.abs(y - center));
     out.copy(PALETTE.fur).lerp(PALETTE.stripe, back * Math.max(band(0.98), band(0.76)));
+    // Ambient occlusion: less light reaches the base and the crease under the head.
+    const base = 1 - smoothstep(0.0, 0.32, y);
+    const crease = Math.exp(-(((y - 1.28) / 0.09) ** 2));
+    out.multiplyScalar(1 - base * 0.32 - crease * 0.14);
   });
 }
 
@@ -152,7 +158,7 @@ function createMouthGeometry() {
     [0.008, -0.002], [0.03, -0.024], [0.06, -0.022], [0.085, 0.012],
   ];
   const curve = new CatmullRomCurve3(
-    local.map(([u, v]) => new Vector3(...surfacePoint(y0 + v, u / radiusAt(y0 + v), 0.004))),
+    local.map(([u, v]) => new Vector3(...surfacePoint(y0 + v, u / radiusAt(y0 + v), FUR_LENGTH * 0.8))),
   );
   return new TubeGeometry(curve, 48, 0.0085, 8, false);
 }
@@ -204,12 +210,12 @@ function createFurNormalMap(): CanvasTexture {
   return texture;
 }
 
-interface PikachuProps {
+export interface PikachuProps {
   animate: boolean;
   hopSignal: number;
 }
 
-function Pikachu({ animate, hopSignal }: PikachuProps) {
+export function Pikachu({ animate, hopSignal }: PikachuProps) {
   const root = useRef<Group>(null);
   const figure = useRef<Group>(null);
   const leftEar = useRef<Group>(null);
@@ -234,8 +240,20 @@ function Pikachu({ animate, hopSignal }: PikachuProps) {
         normalMap: fur,
         normalScale: new Vector2(normalScale, normalScale),
       });
+    // Shell fur: short strands on the body and ears (see createFurShellMaterials).
+    const strands = createStrandMask(21, [18, 11]);
+    const shellBase = {
+      vertexColors: true,
+      roughness: 0.78,
+      sheen: 1,
+      sheenColor: new Color("#fff1a8"),
+      sheenRoughness: 0.5,
+    };
     return {
       fur,
+      strands,
+      bodyShells: createFurShellMaterials(12, FUR_LENGTH, shellBase, strands),
+      earShells: createFurShellMaterials(6, FUR_LENGTH * 0.5, shellBase, strands),
       body: createBodyGeometry(),
       ear: createEarGeometry(),
       tail: createTailGeometry(),
@@ -265,8 +283,10 @@ function Pikachu({ animate, hopSignal }: PikachuProps) {
   useEffect(
     () => () => {
       assets.fur.dispose();
+      assets.strands.dispose();
       [assets.body, assets.ear, assets.tail, assets.mouth].forEach((g) => g.dispose());
       Object.values(assets.materials).forEach((m) => m.dispose());
+      [...assets.bodyShells, ...assets.earShells].forEach((m) => m.dispose());
     },
     [assets],
   );
@@ -339,6 +359,9 @@ function Pikachu({ animate, hopSignal }: PikachuProps) {
   const ear = (side: 1 | -1, ref: RefObject<Group | null>) => (
     <group ref={ref} position={[0.27 * side, 2.17, -0.04]} rotation={[-0.12, 0.25 * side, -0.36 * side]}>
       <mesh geometry={assets.ear} material={materials.ear} castShadow />
+      {assets.earShells.map((shell, i) => (
+        <mesh key={i} geometry={assets.ear} material={shell} />
+      ))}
     </group>
   );
 
@@ -349,12 +372,15 @@ function Pikachu({ animate, hopSignal }: PikachuProps) {
     <group ref={root}>
       <group ref={figure}>
         <mesh geometry={assets.body} material={materials.body} scale={[SX, 1, SZ]} castShadow receiveShadow />
+        {assets.bodyShells.map((shell, i) => (
+          <mesh key={i} geometry={assets.body} material={shell} scale={[SX, 1, SZ]} />
+        ))}
         {ear(-1, leftEar)}
         {ear(1, rightEar)}
 
         {/* Eyes: glossy black with highlights, oriented to the surface. */}
         {([1, -1] as const).map((side, i) => (
-          <group key={side} position={surfacePoint(1.86, eyeAngle * side, -0.025)} rotation={[0, eyeAngle * side, 0]}>
+          <group key={side} position={surfacePoint(1.86, eyeAngle * side, FUR_LENGTH * 0.55)} rotation={[0, eyeAngle * side, 0]}>
             <group
               ref={(g) => {
                 if (g) eyes.current[i] = g;
@@ -375,7 +401,7 @@ function Pikachu({ animate, hopSignal }: PikachuProps) {
 
         {/* Cheeks, each with an electric spark ring used during a hop. */}
         {([1, -1] as const).map((side, i) => (
-          <group key={side} position={surfacePoint(1.66, cheekAngle * side, -0.012)} rotation={[0, cheekAngle * side, 0]}>
+          <group key={side} position={surfacePoint(1.66, cheekAngle * side, FUR_LENGTH * 0.7)} rotation={[0, cheekAngle * side, 0]}>
             <mesh scale={[0.15, 0.135, 0.045]} material={materials.cheek}>
               <sphereGeometry args={[1, 32, 20]} />
             </mesh>
@@ -393,7 +419,7 @@ function Pikachu({ animate, hopSignal }: PikachuProps) {
         ))}
 
         {/* Nose and mouth */}
-        <group position={surfacePoint(1.775, 0, -0.004)}>
+        <group position={surfacePoint(1.775, 0, FUR_LENGTH * 0.8)}>
           <mesh scale={[1.3, 0.8, 0.7]} material={materials.eye}>
             <sphereGeometry args={[0.022, 16, 12]} />
           </mesh>
@@ -429,56 +455,5 @@ function Pikachu({ animate, hopSignal }: PikachuProps) {
         </group>
       </group>
     </group>
-  );
-}
-
-/** Calls `onReady` once the first frame has rendered. */
-function ReadySignal({ onReady }: { onReady?: () => void }) {
-  useEffect(() => {
-    const id = requestAnimationFrame(() => onReady?.());
-    return () => cancelAnimationFrame(id);
-  }, [onReady]);
-  return null;
-}
-
-export interface PikachuSceneProps {
-  /** False for reduced motion: a static pose rendered on demand. */
-  animate: boolean;
-  /** False while offscreen or the tab is hidden, to stop rendering. */
-  active: boolean;
-  hopSignal: number;
-  onReady?: () => void;
-}
-
-export default function PikachuScene({ animate, active, hopSignal, onReady }: PikachuSceneProps) {
-  return (
-    <Canvas
-      shadows="percentage"
-      dpr={[1, 1.75]}
-      frameloop={animate && active ? "always" : "demand"}
-      camera={{ position: [0, 1.85, 6.6], fov: 35 }}
-      onCreated={({ camera }) => camera.lookAt(0, 1.5, 0)}
-      gl={{ antialias: true, alpha: true }}
-    >
-      <hemisphereLight args={["#fff8e1", "#3b2f1a", 0.55]} />
-      <directionalLight
-        position={[2.5, 5, 4]}
-        intensity={2.4}
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-        shadow-bias={-0.0004}
-      />
-      {/* Studio reflections from local light panels (no HDR download). */}
-      <Environment resolution={256} frames={1}>
-        <Lightformer form="rect" intensity={3} position={[0, 4, 5]} scale={[6, 3, 1]} />
-        <Lightformer form="rect" intensity={1.2} position={[-5, 2, 1]} rotation-y={Math.PI / 2} scale={[4, 3, 1]} />
-        <Lightformer form="rect" intensity={1.6} color="#67e8f9" position={[3, 2.5, -4]} rotation-y={-Math.PI * 0.8} scale={[4, 2, 1]} />
-        <Lightformer form="circle" intensity={0.8} color="#fff1c1" position={[0, -2, 3]} scale={3} />
-      </Environment>
-      <Pikachu animate={animate} hopSignal={hopSignal} />
-      <ContactShadows position={[0, 0, 0]} opacity={0.45} scale={4.5} blur={2.2} far={2.4} resolution={512} frames={animate ? Infinity : 1} />
-      <ReadySignal onReady={onReady} />
-    </Canvas>
   );
 }

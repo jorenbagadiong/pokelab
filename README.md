@@ -98,6 +98,8 @@ Server-rendered elements opt into a hidden pre-hydration state with `data-reveal
 - Lighting comes from local Lightformers, so no HDR files are fetched. Pan is disabled, zoom and polar angles are limited, and touch is supported. With reduced motion there is no auto-rotation, no idle animation, and the frame loop runs on demand.
 - GLTF geometry, materials and textures are disposed when the viewer is finally removed. R3F 9.8 keeps its root alive while Next hides a route with `<Activity>`.
 
+**Home hero:** fan-made Pikachu, Charizard and Gengar modelled procedurally in code (`src/components/three/*-model.tsx`). There are no third-party assets: geometry, shell fur, scale and skin normal maps, ambient-occlusion shading, Charizard's tail flame (with a flickering light), fire-breath particles, Gengar's shadow wisps and Shadow Ball are all generated. Click, tap or Enter makes Pikachu hop, Charizard breathe fire and Gengar throw a Shadow Ball. Without hardware-accelerated WebGL the official artwork is shown instead.
+
 To add a real model, place a licensed `.glb` in `public/models/` and add an entry to `SHOWCASE_MODELS` in `src/constants/showcase.ts` with `isPlaceholder: false`.
 
 ## Testing

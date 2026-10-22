@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Box, Heart, Layers } from "lucide-react";
-import { FEATURED_POKEMON_IDS, HERO_POKEMON_ID } from "@/constants/app";
+import { FEATURED_POKEMON_IDS, HERO_COMPANION_IDS, HERO_POKEMON_ID } from "@/constants/app";
 import { POKEMON_TYPES, TYPE_PALETTE } from "@/constants/types";
 import { SHOWCASE_POKEMON_SLUG } from "@/constants/showcase";
 import { getFeaturedPokemon, getPokedexIndex } from "@/lib/api/pokeapi";
@@ -12,7 +12,7 @@ import { AnimatedText } from "@/components/ui/animated-text";
 import { RevealGroup } from "@/components/ui/reveal-group";
 import { SectionHeading, Surface } from "@/components/ui/surface";
 import { PokemonCard } from "@/components/pokemon/pokemon-card";
-import { HeroPikachu } from "@/features/home/hero-pikachu";
+import { HeroShowcase } from "@/features/home/hero-showcase";
 import { HeroSearch } from "@/features/home/hero-search";
 
 export default async function HomePage() {
@@ -21,6 +21,7 @@ export default async function HomePage() {
     getFeaturedPokemon([HERO_POKEMON_ID, ...FEATURED_POKEMON_IDS.filter((id) => id !== HERO_POKEMON_ID)]),
   ]);
   const hero = featured.find((p) => p.id === HERO_POKEMON_ID);
+  const companions = HERO_COMPANION_IDS.flatMap((id) => featured.filter((p) => p.id === id));
   const typeCounts = new Map(POKEMON_TYPES.map((t) => [t, index.filter((p) => p.types.includes(t)).length]));
 
   return (
@@ -65,7 +66,7 @@ export default async function HomePage() {
             </div>
           </RevealGroup>
           {/* The headline and artwork stay visible from first paint so they never delay LCP. */}
-          {hero && <HeroPikachu pokemon={hero} />}
+          {hero && <HeroShowcase pokemon={hero} companions={companions} />}
         </PageContainer>
       </section>
 
