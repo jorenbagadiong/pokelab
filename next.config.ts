@@ -6,6 +6,9 @@ import type { NextConfig } from "next";
 // Pin the project root so lockfiles in parent directories are not mistaken for a workspace root.
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
+// Set NEXT_PUBLIC_BASE_PATH=/pokelab on Vercel; leave it unset locally.
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 /**
  * This machine's private IPv4 addresses (e.g. 192.168.x.x). The dev server only
  * trusts localhost by default and blocks its HMR socket for other origins, which
@@ -15,12 +18,15 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 function lanAddresses(): string[] {
   return Object.values(networkInterfaces())
     .flat()
-    .filter((net) => net !== undefined && net.family === "IPv4" && !net.internal)
+    .filter(
+      (net) => net !== undefined && net.family === "IPv4" && !net.internal,
+    )
     .map((net) => net!.address)
     .filter((ip) => /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(ip));
 }
 
 const nextConfig: NextConfig = {
+  basePath,
   allowedDevOrigins: lanAddresses(),
   cacheComponents: true,
   partialPrefetching: true,
@@ -43,6 +49,20 @@ const nextConfig: NextConfig = {
         as: "*.css",
       },
     },
+  },
+  async redirects() {
+    // When a base path is set, send the bare root (pokelab-steel.vercel.app/)
+    // to /pokelab instead of showing a 404.
+    return basePath
+      ? [
+          {
+            source: "/",
+            destination: basePath,
+            basePath: false,
+            permanent: false,
+          },
+        ]
+      : [];
   },
 };
 
